@@ -1,5 +1,6 @@
 package com.burakdemir.firebasejava.Activity;
 
+import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -9,12 +10,14 @@ import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.burakdemir.firebasejava.Model.Kullanici;
 import com.burakdemir.firebasejava.R;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.FirebaseDatabase;
 
 public class RegisterActivity extends AppCompatActivity {
 
@@ -83,21 +86,42 @@ public class RegisterActivity extends AppCompatActivity {
                         // task parametresinden kullanıcının tüm verilerine (mail, uid vs) ulaşabilirsin
                         if (task.isSuccessful()) {
 
-
-                            Toast.makeText(RegisterActivity.this, "Üye kaydedildi" + task.getResult().getUser().getUid(), Toast.LENGTH_SHORT).show();
-
                             // kullanıcıyı signOut yapmadan önce ona onay maili göndericem
                             onayMailiGonder();
 
-                            // firebase kullanıcıyı oluşturduysa otomatik olarak login yapar bu yüzden signout diyerek sistemden atabilirsin
-                            FirebaseAuth.getInstance().signOut();
+                            // ilk database işlemleri burada
+                            // database'e object olarak veri ekliyorum!!
+                            // kullanıcı objesi oluşturup değerlerini doldurdum
+                            // burada verdiğin sıraya göre database'e doldurulur yoksa oluşturulur!
+                            Kullanici kullanici = new Kullanici();
+                            kullanici.setIsim(etMail.getText().toString().substring(0, etMail.getText().toString().indexOf("@")));
+                            kullanici.setKullanici_id(task.getResult().getUser().getUid());
+                            kullanici.setProfil_resmi("");
+                            kullanici.setTelefon("");
+                            kullanici.setSeviye("1");
+
+                            FirebaseDatabase.getInstance().getReference() //tablonun kendisi
+                                    .child("kullanici") //bir altı (json array)
+                                    .child(task.getResult().getUser().getUid()) //bir alt çocuk
+                                    .setValue(kullanici) //direkt object olarak gönderdim tüm eşleşmeler burada yapılacak (json object) = senin object'in
+                            .addOnCompleteListener(new OnCompleteListener<Void>() {
+                                @Override
+                                public void onComplete(@NonNull Task<Void> task) {
+
+                                    if (task.isSuccessful()) {
+
+                                        Toast.makeText(RegisterActivity.this, "Üye kaydedildi: " + FirebaseAuth.getInstance().getCurrentUser().getUid(), Toast.LENGTH_SHORT).show();
+                                        // firebase kullanıcıyı oluşturduysa otomatik olarak login yapar bu yüzden signout diyerek sistemden atabilirsin
+                                        FirebaseAuth.getInstance().signOut();
+                                        loginSayfasinaYonlendir();
+                                    }
+                                }
+                            });
                         }
                         else {
 
                             Toast.makeText(RegisterActivity.this, "Üye kaydedilerken sorun oluştu" + task.getException(), Toast.LENGTH_SHORT).show();
                         }
-
-
                     }
                 });
 
@@ -141,5 +165,12 @@ public class RegisterActivity extends AppCompatActivity {
     private void progressBarGizle() {
 
         pbRegister.setVisibility(View.INVISIBLE);
+    }
+
+    private void loginSayfasinaYonlendir() {
+
+        Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
+        startActivity(intent);
+        finish();
     }
 }

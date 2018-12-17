@@ -46,7 +46,7 @@ public class LoginActivity extends AppCompatActivity {
         findViews();
 
         etLoginMail.setText("ddmrburak@gmail.com");
-        etLoginSifre.setText("234567");
+        etLoginSifre.setText("123456");
     }
 
     private void initMyAuthStateListener() {
